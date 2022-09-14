@@ -100,7 +100,9 @@ static void snoop_destroy(void *obj)
 
 	ast_free(snoop->app);
 
+	if(snoop->spyee_chan) {
 	ast_channel_cleanup(snoop->spyee_chan);
+	}
 	ast_channel_cleanup(snoop->chan);
 }
 
@@ -135,9 +137,11 @@ static void publish_chanspy_message(struct stasis_app_snoop *snoop, int start)
 	}
 	ast_multi_channel_blob_add_channel(payload, "spyer_channel", snoop_snapshot);
 
+	if(snoop->spyee_chan) {
 	spyee_snapshot = ast_channel_snapshot_get_latest(ast_channel_uniqueid(snoop->spyee_chan));
 	if (spyee_snapshot) {
 		ast_multi_channel_blob_add_channel(payload, "spyee_channel", spyee_snapshot);
+	}
 	}
 
 	message = stasis_message_create(type, payload);
@@ -425,8 +429,9 @@ struct ast_channel *stasis_app_control_snoop(struct ast_channel *chan,
 	}
 
 	/* Keep a reference to the channel we are spying on */
-	snoop->spyee_chan = ast_channel_ref(chan);
-
+	if(chan) {
+		snoop->spyee_chan = ast_channel_ref(chan);
+	}
 	publish_chanspy_message(snoop, 1);
 
 	/* The caller of this has a reference as well */
